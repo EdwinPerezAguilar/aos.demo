@@ -1,0 +1,40 @@
+tosca_definitions_version: huaweicloud_tosca_version_1_0   #Template version information
+node_templates:                 #Element object definition
+  myvpc:                        #VPC
+    type: HuaweiCloud.VPC.VPC   
+    properties:                 
+      name: my-vpc              #Name of the VPC
+      cidr: '192.168.0.0/16'    #VPC CIDR
+  mysubnet:                     #Subnet
+    type: HuaweiCloud.VPC.Subnet
+    properties:
+      name: my-subnet           #Name of the subnet
+      cidr: '192.168.1.0/24'    #Subnet CIDR
+      gateway: 192.168.1.1      #Gateway of the subnet
+      vpcId:                    #ID of the VPC to which the subnet belongs
+        get_reference: myvpc
+      dhcpEnable: true          #Determines whether to enable the DHCP function for the subnet in the VPC.
+    requirements:               #Dependency between the subnet and VPC.
+      - vpcId:
+          node: myvpc
+  myecs:                        #ECS
+    type: HuaweiCloud.ECS.CloudServer    
+    properties:       
+      name: my-ecs              #Name of the ECS
+      instances: 1              #Number of created ECSs
+      imageId: a0281be0-7962-412b-8e81-8557331fdd26   #Image ID used by the ECS. In this template, the image ID is the ID of the system disk based on 64-bit CentOS 7.4.
+      flavor: s3.medium.2         #Specifications of the ECS
+      vpcId:                    #ID of the VPC to which the ECS belongs. Either a new or an existing VPC ID can be used.
+        get_reference: myvpc    #Obtains the dynamic attribute value of the associated element.
+      availabilityZone: na-mexico-1a     #AZ to which the ECS belongs. This template uses an AZ in the CN South-Guangzhou region.
+      nics:                              #NIC of the ECS
+        - subnetId: 
+            get_reference: mysubnet      
+      rootVolume:              #System disk configuration of the ECS
+        volumeType: SSD       #Common I/O disk type
+        size: 40               #System disk size (unit: GB)
+    requirements:              #Dependency among the ECS, VPC, and subnet.
+      - vpcId:         
+          node: myvpc      
+      - nics.subnetId:          
+          node: mysubnet
